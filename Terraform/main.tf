@@ -56,10 +56,10 @@ resource "aws_security_group" "logger" {
     cidr_blocks = var.ip_whitelist
   }
 
-  # Splunk access
+  # Kibana access
   ingress {
-    from_port   = 8000
-    to_port     = 8000
+    from_port   = 5601
+    to_port     = 5601
     protocol    = "tcp"
     cidr_blocks = var.ip_whitelist
   }
@@ -177,6 +177,7 @@ resource "aws_instance" "logger" {
       "sudo mkdir /home/vagrant/.ssh && sudo cp /home/ubuntu/.ssh/authorized_keys /home/vagrant/.ssh/authorized_keys && sudo chown -R vagrant:vagrant /home/vagrant/.ssh",
       "echo 'vagrant    ALL=(ALL:ALL) NOPASSWD:ALL' | sudo tee -a /etc/sudoers",
       "sudo git clone https://github.com/clong/DetectionLab.git /opt/DetectionLab",
+      "sudo git clone https://github.com/duzvik/DetectionLab.git /opt/DetectionLabELK",
       "sudo sed -i 's/eth1/eth0/g' /opt/DetectionLab/Vagrant/bootstrap.sh",
       "sudo sed -i 's/ETH1/ETH0/g' /opt/DetectionLab/Vagrant/bootstrap.sh",
       "sudo sed -i 's#/vagrant/resources#/opt/DetectionLab/Vagrant/resources#g' /opt/DetectionLab/Vagrant/bootstrap.sh",
@@ -184,7 +185,12 @@ resource "aws_instance" "logger" {
       "sudo service ssh restart",
       "sudo chmod +x /opt/DetectionLab/Vagrant/bootstrap.sh",
       "sudo apt-get -qq update",
+      "sudo chmod +x /opt/DetectionLabELK/Vagrant/ELK.sh",
+      "sudo mkdir /opt/splunk/",
+      "sudo mkdir /opt/splunk/bin",
+      "sudo  echo do_not_install_splunk > /opt/splunk/bin/splunk",
       "sudo /opt/DetectionLab/Vagrant/bootstrap.sh",
+      "sudo /opt/DetectionLabELK/Vagrant/ELK.sh",
     ]
 
     connection {
@@ -239,9 +245,11 @@ resource "aws_instance" "wef" {
   instance_type = "t2.medium"
 
   provisioner "remote-exec" {
+    #uninstall splunk forwarder
     inline = [
       "choco install -force -y winpcap",
       "cscript c:\\windows\\system32\\slmgr.vbs -rearm",
+      # "c:\windows\system32\msiexec.exe /x c:\windows\system32\msiexec.exe"      
       "shutdown -r",
     ]
 
